@@ -1,0 +1,62 @@
+#include <Servo.h>
+
+Servo myServo;  // Create a Servo object
+
+int xAxis;  // Joystick X-axis input
+int yAxis;  // Joystick Y-axis input
+int servoPos;  // Variable to store the servo position
+
+// Distance Sensor
+const int trigPin= 10;
+const int echoPin = 11;
+
+//Measuring distance
+long duration;
+int distance;
+
+void setup() {
+  Serial.begin(9600);
+  myServo.attach(9);  // Attach the servo to pin 9
+  pinMode(trigPin, OUTPUT); // Sets trigPin as the output
+  pinMode(echoPin, INPUT); // Sets the echoPin as an Input
+}
+
+void loop() {
+  xAxis = analogRead(A0);  // Read X-axis of the joystick
+  yAxis = analogRead(A1);  // Read Y-axis of the joystick
+
+  // Map joystick value (0-1023) to servo position (0-180 degrees)
+  servoPos = map(xAxis, 0, 1023, 0, 180);
+  
+  // Set the servo position
+  myServo.write(servoPos);
+
+  delay(15);  // Delay for smooth movement
+
+  distance = calculateDistance(); // Measuring distance at this angle 
+
+
+  Serial.print("Angle: ");
+  Serial.print(servoPos);
+  Serial.print("°, Distance: ");
+  Serial.print(distance);  // Print distance and move to the next line
+  Serial.println(" cm");
+  delay(500);
+
+}
+// Function to measure distance using the distance sensor
+int calculateDistance() {
+  // Send a short pulse to trigger the sensor
+  digitalWrite(trigPin,LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin,LOW);
+
+  duration = pulseIn(echoPin, HIGH);
+
+  //Converting time into distance (Speed of sound is 343 m/s or 0.0343 cm/us)
+  int distance = duration * 0.0343 / 2; //divide by 2 for round 
+
+  return distance;
+}
