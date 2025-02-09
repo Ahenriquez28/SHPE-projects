@@ -1,0 +1,89 @@
+#include <Wire.h>
+#include <MPU6050.h>
+
+MPU6050 mpu;
+
+// Define LED pins for each direction (accounting for shared pins)
+const int downLeds[] = {2, 3, 4};    // DOWN: Top, Left, Right (Previously UP)
+const int upLeds[] = {5, 6, 7};      // UP: Bottom, Left, Right (Previously DOWN)
+const int leftLeds[] = {8, 9};       // LEFT: Top+Bottom (Shared), Middle
+const int rightLeds[] = {10, 11};    // RIGHT: Top+Bottom (Shared), Middle
+
+void setup() {
+    Serial.begin(9600);
+    Wire.begin();
+
+    Serial.println("Scanning for I2C devices...");
+    scanI2C(); // Run I2C Scanner
+
+    mpu.initialize();
+    if (!mpu.testConnection()) {
+        Serial.println("MPU6050 Connection Failed! Check wiring.");
+        while (1); // Stop execution if MPU6050 is not found
+    }
+    
+    Serial.println("MPU6050 Connected!");
+
+    // Set LED pins as OUTPUT
+    for (int i = 2; i <= 11; i++) {
+        pinMode(i, OUTPUT);
+    }
+}
+
+void loop() {
+    int16_t ax, ay, az;
+    mpu.getAcceleration(&ax, &ay, &az);
+
+    Serial.print("AX: "); Serial.print(ax);
+    Serial.print(" | AY: "); Serial.print(ay);
+    Serial.print(" | AZ: "); Serial.println(az);
+
+    int threshold = 5000; // Adjust for sensitivity
+
+    resetLEDs();
+
+    if (ax > threshold) {         // Tilt Forward (DOWN) - Corrected
+        lightUp(downLeds, 3);
+    } else if (ax < -threshold) { // Tilt Backward (UP) - Corrected
+        lightUp(upLeds, 3);
+    } else if (ay > threshold) {  // Tilt Right (RIGHT)
+        lightUp(rightLeds, 2);
+    } else if (ay < -threshold) { // Tilt Left (LEFT)
+        lightUp(leftLeds, 2);
+    }
+
+    delay(100);
+}
+
+// I2C Scanner for debugging
+void scanI2C() {
+    byte error, address;
+    int numDevices = 0;
+
+    for (address = 1; address < 127; address++) {
+        Wire.beginTransmission(address);
+        error = Wire.endTransmission();
+
+        if (error == 0) {
+            Serial.print("I2C device found at 0x");
+            Serial.println(address, HEX);
+            numDevices++;
+        }
+    }
+
+    if (numDevices == 0) Serial.println("No I2C devices found. Check connections!");
+}
+
+// Turn off all LEDs
+void resetLEDs() {
+    for (int i = 2; i <= 11; i++) {
+        digitalWrite(i, LOW);
+    }
+}
+
+// Light up LEDs in a given array
+void lightUp(const int leds[], int size) {
+    for (int i = 0; i < size; i++) {
+        digitalWrite(leds[i], HIGH);
+    }
+}
