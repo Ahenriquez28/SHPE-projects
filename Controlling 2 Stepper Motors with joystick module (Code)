@@ -2,74 +2,67 @@
 #include <Servo.h>
 
 #define STEPS_PER_REV 2048
+Stepper ms1(STEPS_PER_REV, 8, 9, 10, 11); // 8,10,9,11 the way i pinned these
+Stepper ms2(STEPS_PER_REV, 6,3,5,4 ); // int1 = d6, int2=5, int3 = 3, int4 = 4
 
-// Define the first stepper motor (connected to pins 8, 10, 9, 11)
-Stepper ms1(STEPS_PER_REV, 8, 10, 9, 11);
-// Define the second stepper motor (connected to pins 3, 4, 5, 6)
-Stepper ms2(STEPS_PER_REV, 3, 4, 5, 6);
+int Xpin1 = A1;
+int Ypin1 = A0;
 
-// Joystick 1 (X and Y)
-int Xpin1 = A1;  // X-axis pin for joystick 1
-int Ypin1 = A0;  // Y-axis pin for joystick 1
+int Xpin2 = A4;
+int Ypin2= A5;
 
-// Joystick 2 (X and Y)
-int Xpin2 = A5;  // X-axis pin for joystick 2
-int Ypin2 = A4;  // Y-axis pin for joystick 2
 
-// Servo motor
-Servo myServo;
-int servoPin = 12;  // Pin for the servo motor
-
-// Joystick dead zone and maximum speed for stepper motors
 const int deadzone = 100;
-const int maxSpeed = 5;
+const int maxStep = 50; 
+
+//Servo Motor
+Servo myServo;
+int servoPin = 13;
 
 void setup() {
   Serial.begin(9600);
-  
-  ms1.setSpeed(10);  // Set speed for the first stepper motor
-  ms2.setSpeed(50);  // Set speed for the second stepper motor
-  
-  myServo.attach(servoPin);  // Attach the servo to pin 12
-  Serial.println("Servo attached to pin 12.");
+  ms1.setSpeed(15);
+  ms2.setSpeed(15);
+
+  myServo.attach(servoPin);
+  Serial.println("Servo attached to pin 13");
 }
 
 void loop() {
-  int xValue1 = analogRead(Xpin1);  // Read X value of joystick 1
-  int yValue1 = analogRead(Ypin1);  // Read Y value of joystick 1
+  int xValue1 = analogRead(Xpin1);
+  int yValue1 = analogRead(Ypin1);
 
-  int xValue2 = analogRead(Xpin2);  // Read X value of joystick 2
-  int yValue2 = analogRead(Ypin2);  // Read Y value of joystick 2
+  int xValue2 = analogRead(Xpin2);
+  int yValue = analogRead(Ypin2);
 
-  // Debugging: Print joystick values to Serial Monitor
-  Serial.print("X1: "); Serial.print(xValue1);
-  Serial.print(" | Y1: "); Serial.print(yValue1);
-  Serial.print(" | X2: "); Serial.print(xValue2);
-  Serial.print(" | Y2: "); Serial.println(yValue2);
+  bool moved = false; 
 
-  // Control first stepper motor using joystick 1 (X-axis)
   if (xValue1 > (512 + deadzone)) {
-    ms1.step(maxSpeed);  // Move first motor forward (clockwise)
-  } 
-  else if (xValue1 < (512 - deadzone)) {
-    ms1.step(-maxSpeed);  // Move first motor backward (counterclockwise)
-  } 
+    ms1.step(maxStep);
+    moved = true;
+  } else if (xValue1 < (512 - deadzone)) {
+    ms1.step(-maxStep);
+    moved = true;
+  }
 
-  // Control second stepper motor using joystick 2 (Y-axis)
-  if (yValue2 > (512 + deadzone)) {
-    ms2.step(maxSpeed);  // Move second motor forward (clockwise)
-  } 
-  else if (yValue2 < (512 - deadzone)) {
-    ms2.step(-maxSpeed);  // Move second motor backward (counterclockwise)
-  } 
+  if (xValue2 > (512 + deadzone)){
+    ms2.step(maxStep);
+    moved = true;
+  } else if (xValue2 < (512 - deadzone)){
+    ms2.step(-maxStep);
+    moved = true;
+  }
 
-  // Control the servo motor using joystick 2 (X-axis)
-  int servoPosition = map(xValue2, 0, 1023, 0, 180);  // Map X-axis of joystick 2 to servo range
-  
-  Serial.print("Servo Position: ");
-  Serial.println(servoPosition);  // Print the servo position value for debugging
-  
-  myServo.write(servoPosition);  // Move servo based on joystick 2 X value
 
-  delay(10);  // Short delay to smooth out reading
+
+  if (moved) {
+    Serial.print("X1: "); Serial.print(xValue1);
+    Serial.print(" | Y1: "); Serial.println(yValue1);
+    delay(50);  // Increase delay to avoid missed steps
+  }
+
+  //Moving Servo Motor
+  int servoPosition = map(yValue1, 0, 1023, 0, 180);
+  myServo.write(servoPosition);
 }
+
