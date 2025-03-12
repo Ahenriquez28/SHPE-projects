@@ -1,0 +1,26 @@
+#include <Stepper.h>
+
+#define STEPS_PER_REV 2048
+Stepper ms(STEPS_PER_REV, 8,9,10,11);
+
+int Xpin = A5;
+int Ypin = A4;
+
+const int deadzone = 100;
+const int maxStep = 50;
+
+void setup (){
+  Serial.begin(9600);
+  ms.setSpeed(20);
+}
+
+void loop() {
+  int xValue = analogRead(Xpin);
+  int yValue = analogRead(Ypin);
+
+  if (xValue > (512 + deadzone)){
+    ms.step(maxStep);
+
+  } else if (xValue < (512 - deadzone))
+  ms.step(-maxStep);
+}
