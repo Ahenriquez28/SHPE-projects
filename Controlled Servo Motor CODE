@@ -1,0 +1,20 @@
+#include <Servo.h>
+
+#define SERVO_PIN 3
+#define X_PIN A5
+#define Y_PIN A4
+
+Servo myServo;
+
+void setup() {
+    myServo.attach(SERVO_PIN);
+    pinMode(X_PIN, INPUT);
+    pinMode(Y_PIN, INPUT);
+}
+
+void loop() {
+    int xValue = analogRead(X_PIN); // Read X-axis value (0 to 1023)
+    int angle = map(xValue, 0, 1023, 0, 180); // Map joystick range to servo range
+    myServo.write(angle); // Move servo to mapped angle
+    delay(15); // Small delay for smooth movement
+}
