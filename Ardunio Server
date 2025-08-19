@@ -1,0 +1,76 @@
+#include <WiFiS3.h>
+#include <ArduinoMDNS_R4.h> // TO help set DNS
+
+#define TRIG_PIN 9
+#define ECHO_PIN 10
+
+char ssid[] = "...";     // your WiFi name
+char pass[] = "...";    
+int status = WL_IDLE_STATUS;
+
+WiFiServer server(8080);
+ArduinoMDNS mdns;
+
+long duration;
+int distance;
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(TRIG_PIN, OUTPUT);
+  pinMode(ECHO_PIN, INPUT);
+
+  while (status != WL_CONNECTED) {
+    Serial.print("Trying to pull in the WiFi: ");
+    Serial.println(ssid);
+
+    status = WiFi.begin(ssid, pass);
+    delay(10000);
+  }
+
+  Serial.println("Connected to WiFi!");
+  Serial.print("This is the IP Address: ");
+  Serial.println(WiFi.localIP());
+  server.begin();
+
+  if (!mdns.begin(WiFi.localIP(), "ardunio-radar")){
+    Serial.println("error starting eDNS");
+    while (1);
+  }
+  mdns.addService("_http", "_tcp", 8080);
+  Serial.println("mDNS responder starte at: http://arduino-radar.local:8080");
+}
+
+void loop() {
+
+  digitalWrite(TRIG_PIN, LOW);
+  delayMicroseconds(2);
+  digitalWrite(TRIG_PIN, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TRIG_PIN, LOW);
+
+  duration = pulseIn(ECHO_PIN, HIGH);
+  distance = duration * 0.034 / 2;
+  WiFiClient client = server.available();
+  if (client) {
+    Serial.println("New client connected");
+
+    // Build HTML response with auto-refresh
+    String response = "<!DOCTYPE html><html><head>";
+    response += "<meta http-equiv='refresh' content='1'>"; // Refresh every 1 second
+    response += "<title>Ultrasonic Sensor</title></head><body>";
+    response += "<h1>Ultrasonic Sensor Reading</h1>";
+    response += "<p>Distance: " + String(distance) + " cm</p>";
+    response += "</body></html>";
+
+    client.println("HTTP/1.1 200 OK");
+    client.println("Content-Type: text/html");
+    client.println("Connection: close");
+    client.println();
+    client.println(response);
+
+    delay(1);
+    client.stop();
+    Serial.println("Client disconnected");
+  }
+  delay(50);
+}
