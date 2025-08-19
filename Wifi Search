@@ -1,0 +1,45 @@
+#include <WiFiS3.h>
+
+void setup() {
+  Serial.begin(9600);
+  while (!Serial);
+
+  Serial.println("Wi-Fi Network Scanner Starting...");
+}
+
+void loop() {
+  Serial.println("\nScanning for networks...");
+
+  int numNetworks = WiFi.scanNetworks();
+
+  if (numNetworks == 0) {
+    Serial.println("No networks found");
+  } else {
+    Serial.print(numNetworks);
+    Serial.println(" networks found:");
+
+    for (int i = 0; i < numNetworks; i++) {
+      Serial.print(i + 1);
+      Serial.print(": ");
+      Serial.print(WiFi.SSID(i));           // Network name
+      Serial.print(" | RSSI: ");
+      Serial.print(WiFi.RSSI(i));           // Signal strength
+      Serial.print(" dBm | Encryption: ");
+      Serial.println(getEncryptionType(WiFi.encryptionType(i))); // Encryption type
+    }
+  }
+
+  delay(10000); // Wait 10 seconds before scanning again
+}
+
+// Helper to decode encryption type
+String getEncryptionType(int thisType) {
+  switch (thisType) {
+    case ENC_TYPE_WEP: return "WEP";
+    case ENC_TYPE_TKIP: return "WPA";
+    case ENC_TYPE_CCMP: return "WPA2";
+    case ENC_TYPE_NONE: return "OPEN";
+    case ENC_TYPE_AUTO: return "AUTO";
+    default: return "UNKNOWN";
+  }
+}
